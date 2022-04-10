@@ -1,7 +1,5 @@
 #include <ArduinoOTA.h>
 #ifdef ESP32
-#include <FS.h>
-#include <SPIFFS.h>
 #include <ESPmDNS.h>
 #include <WiFi.h>
 #include <AsyncTCP.h>
@@ -11,7 +9,8 @@
 #include <ESP8266mDNS.h>
 #endif
 #include <ESPAsyncWebServer.h>
-#include <SPIFFSEditor.h>
+#include <FSEditor.h>
+#include <LittleFS.h>
 
 // SKETCH BEGIN
 AsyncWebServer server(80);
@@ -130,7 +129,7 @@ void setup(){
 
   MDNS.addService("http","tcp",80);
 
-  SPIFFS.begin();
+  LittleFS.begin();
 
   ws.onEvent(onWsEvent);
   server.addHandler(&ws);
@@ -141,16 +140,16 @@ void setup(){
   server.addHandler(&events);
 
 #ifdef ESP32
-  server.addHandler(new SPIFFSEditor(SPIFFS, http_username,http_password));
+  server.addHandler(new FSEditor(LittleFS, http_username,http_password));
 #elif defined(ESP8266)
-  server.addHandler(new SPIFFSEditor(http_username,http_password));
+  server.addHandler(new FSEditor(http_username,http_password));
 #endif
   
   server.on("/heap", HTTP_GET, [](AsyncWebServerRequest *request){
     request->send(200, "text/plain", String(ESP.getFreeHeap()));
   });
 
-  server.serveStatic("/", SPIFFS, "/").setDefaultFile("index.htm");
+  server.serveStatic("/", LittleFS, "/").setDefaultFile("index.htm");
 
   server.onNotFound([](AsyncWebServerRequest *request){
     Serial.printf("NOT_FOUND: ");
